@@ -22,7 +22,9 @@
 		<script>
 			var hud;
 			function init() {
-				hud = new HUD('hud');
+				setTimeout(() => {
+					hud = new HUD('hud');
+				}, 500);
 			}
 
 			test = {

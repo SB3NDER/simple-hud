@@ -16,16 +16,11 @@
 		</style>
 	</head>
 
-	<body onload="init();">
+	<body>
 		<canvas id="hud"></canvas>
 
 		<script type="text/javascript">
-			var hud;
-			function init() {
-				setTimeout(() => {
-					hud = new HUD('hud');
-				}, 1000);
-			}
+			var hud = new HUD('hud');
 
 			test = {
 				variables: {

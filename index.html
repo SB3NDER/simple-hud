@@ -1,12 +1,88 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <title>HUD</title>
-    </head>
-    <body onload="init();">
-        <link rel="stylesheet" type="text/css" href="./style.css">
-        <canvas id="hud"></canvas>
-        <script src="./hud.js"></script>
-    </body>
+	<head>
+		<meta charset="UTF-8" />
+		<title>HUD</title>
+		<script src="./hud.js"></script>
+		<style>
+			body {
+				background-color: black;
+			}
+			#hud {
+				border: 1px solid white;
+				width: 100%;
+				height: 700px;
+			}
+		</style>
+	</head>
+
+	<body onload="init();">
+		<canvas id="hud"></canvas>
+
+		<script>
+			var hud;
+			function init() {
+				hud = new HUD('hud');
+			}
+
+			test = {
+				variables: {
+					heading: (Math.random() * 1000) % 360,
+					pitch: (Math.random() * 1000) % 90,
+					roll: (Math.random() * 1000) % 180,
+
+					speed: Math.random() * 1000,
+					altitude: Math.random() * 1000,
+					throtle: Math.random(),
+
+					flightPitch: (Math.random() * 1000) % 90,
+					flightHeading: (Math.random() * 1000) % 360,
+				},
+				interval: undefined,
+				start: () => {
+					this.interval = setInterval(() => {
+						hud.heading = test.variables.heading * (Math.PI / 180);
+						hud.pitch = test.variables.pitch * (Math.PI / 180);
+						hud.roll = test.variables.roll * (Math.PI / 180);
+
+						hud.speed = test.variables.speed;
+						hud.altitude = test.variables.altitude;
+						hud.throtle = test.variables.throtle;
+
+						hud.flightPitch = test.variables.flightPitch * (Math.PI / 180);
+						hud.flightHeading = test.variables.flightHeading * (Math.PI / 180);
+
+						test.variables.heading += 0.05;
+						if (test.variables.heading >= 360) test.variables.heading = 0;
+
+						test.variables.pitch += 0.05;
+						if (test.variables.pitch >= 90) test.variables.pitch = 0;
+
+						test.variables.roll += 0.05;
+						if (test.variables.roll >= 180) test.variables.roll = 0;
+
+						test.variables.speed += 0.01;
+						test.variables.altitude += 0.1;
+
+						test.variables.throtle += 0.001;
+						if (test.variables.throtle >= 1) test.variables.throtle = 0;
+
+						test.variables.flightPitch += 0.05;
+						if (test.variables.flightPitch >= 90)
+							test.variables.flightPitch = 0;
+
+						test.variables.flightHeading += 0.05;
+						if (test.variables.flightHeading >= 360)
+							test.variables.flightHeading = 0;
+					}, 5);
+				},
+				stop: () => {
+					clearInterval(this.interval);
+				},
+			};
+		</script>
+
+		<button type="button" onclick="test.start();">Start test</button>
+		<button type="button" onclick="test.stop();">Stop test</button>
+	</body>
 </html>

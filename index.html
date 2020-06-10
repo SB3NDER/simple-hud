@@ -2,7 +2,7 @@
 <html lang="en">
 	<head>
 		<meta charset="UTF-8" />
-		<title>HUD</title>
+		<title>simple-hud</title>
 		<script src="./hud.js" type="text/javascript"></script>
 		<style>
 			body {
@@ -20,7 +20,8 @@
 		<canvas id="hud"></canvas>
 
 		<script type="text/javascript">
-			var hud = new HUD('hud');
+			var canvas= document.getElementById('hud');
+			var hud = new HUD(canvas);
 
 			test = {
 				variables: {

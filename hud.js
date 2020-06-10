@@ -1,6 +1,8 @@
+'use strict';
+
 class HUD {
-	constructor(id) {
-		this.canvas = document.getElementById(id);
+	constructor(node) {
+		this.canvas = node;
 		this.ctx = this.canvas.getContext('2d');
 
 		this.canvas.width = 1280;
@@ -32,10 +34,10 @@ class HUD {
 		this.fontWeight = 'bold';
 		this.fontFamily = 'Arial';
 
-		this.draw();
+		requestAnimationFrame(this.draw);
 	}
 
-	draw() {
+	draw = () => {
 		this.canvas.width = this.canvas.clientWidth; // clear canvas
 		this.canvas.height = this.canvas.clientHeight;
 
@@ -106,8 +108,8 @@ class HUD {
 		this.drawThrotle(border + 30, this.canvas.height / 2 - 60);
 		this.drawTime(border, this.canvas.height / 2 + 30);
 
-		requestAnimationFrame(() => this.draw()); // '() =>' contain 'this' reference
-	}
+		requestAnimationFrame(this.draw);
+	};
 
 	setFont(size) {
 		this.ctx.font =

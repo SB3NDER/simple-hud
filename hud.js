@@ -22,6 +22,7 @@ class HUD {
 
 		this.pixelPerDegree = 12;
 		this.uncagedMode = false; // align pitch ladders to flight path
+		this.exactRollRadius = false;
 
 		this.timezone = undefined; // default local time, ex. 'America/Los_Angeles' or 'Asia/Tokyo'
 
@@ -34,12 +35,27 @@ class HUD {
 		this.fontWeight = 'bold';
 		this.fontFamily = 'Arial';
 
-		requestAnimationFrame(this.draw);
+		this.running = false;
+	}
+
+	start() {
+		if (!this.running) {
+			this.running = true;
+			requestAnimationFrame(this.draw);
+		}
+	}
+
+	stop() {
+		this.running = false;
 	}
 
 	draw = () => {
 		this.canvas.width = this.canvas.clientWidth; // clear canvas
 		this.canvas.height = this.canvas.clientHeight;
+
+		if (!this.running) {
+			return;
+		}
 
 		this.ctx.lineWidth = this.lineWidth;
 		this.ctx.strokeStyle = this.color;
@@ -47,15 +63,19 @@ class HUD {
 
 		//this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height); // clear canvas
 
-		// dynamic
+		// dynamic ui
+
 		this.ctx.save();
 		this.ctx.translate(this.canvas.width / 2, this.canvas.height / 2); // center coordinate
 		var pixelPerRad = this.pixelPerDegree * (180 / Math.PI); // pixels per radiant
 
+		// flight path
 		this.drawFlightPath(
 			this.flightHeading * pixelPerRad,
 			-(this.flightPitch * pixelPerRad)
-		); // flight path
+		);
+
+		// pitch
 
 		if (this.uncagedMode) {
 			// align pitch ladders to flight path
@@ -84,9 +104,11 @@ class HUD {
 		}
 		this.ctx.restore();
 
-		// fixed
+		// fixed ui
+
 		var border = 16;
 
+		// speed
 		this.drawVerticalScale(
 			border,
 			this.canvas.height / 2,
@@ -94,7 +116,9 @@ class HUD {
 			'9999',
 			41,
 			false
-		); // speed
+		);
+
+		// altitude
 		this.drawVerticalScale(
 			this.canvas.width - border,
 			this.canvas.height / 2,
@@ -102,10 +126,24 @@ class HUD {
 			'99999',
 			41,
 			true
-		); // altitude
+		);
+
+		// heading
 		this.drawHeading(this.canvas.width / 2, border, 61, false);
 
+		// roll
+		this.drawRoll(
+			this.canvas.width / 2,
+			this.canvas.height - border,
+			51,
+			260,
+			true
+		);
+
+		// throtle
 		this.drawThrotle(border + 30, this.canvas.height / 2 - 60);
+
+		// time
 		this.drawTime(border, this.canvas.height / 2 + 30);
 
 		requestAnimationFrame(this.draw);
@@ -300,7 +338,7 @@ class HUD {
 
 		var border = 3;
 
-		var stepHeight = 8;
+		var stepWidth = 8;
 		var stepLength = [16, 11, 7];
 
 		this.ctx.textAlign = right ? 'right' : 'left';
@@ -313,9 +351,9 @@ class HUD {
 
 		this.ctx.rect(
 			0,
-			-((stepRange * stepHeight) / 2),
+			-((stepRange * stepWidth) / 2),
 			mf * 100,
-			stepRange * stepHeight
+			stepRange * stepWidth
 		); // visible step range clip
 		this.ctx.clip();
 
@@ -324,7 +362,7 @@ class HUD {
 		var stepValueOffset = Math.floor(value); // 35.5 -> 35
 		var stepOffset = value - stepValueOffset; // 35.5 -> 0.5
 
-		this.ctx.translate(0, (stepZeroOffset + stepOffset) * stepHeight); // translate to bottom
+		this.ctx.translate(0, (stepZeroOffset + stepOffset) * stepWidth); // translate to start position
 
 		for (
 			let i = -stepZeroOffset + stepValueOffset;
@@ -333,7 +371,7 @@ class HUD {
 		) {
 			this.ctx.beginPath();
 			this.ctx.moveTo(0, 0);
-			switch ((i * Math.sign(i)) % 10) {
+			switch (Math.abs(i) % 10) {
 				case 0:
 					this.ctx.lineTo(mf * stepLength[0], 0);
 
@@ -352,7 +390,7 @@ class HUD {
 			}
 			this.ctx.stroke();
 
-			this.ctx.translate(0, -stepHeight);
+			this.ctx.translate(0, -stepWidth);
 		}
 
 		this.ctx.restore();
@@ -378,7 +416,7 @@ class HUD {
 		var textWidth = this.ctx.measureText('360').width;
 
 		var length = textSideBorder * 2 + textWidth; // total length
-		var height = textTopBorder * (3 / 2) + fontSize + length / 4; // total height
+		var height = textTopBorder * 1.5 + fontSize + length / 4; // total height
 
 		this.ctx.textAlign = 'right';
 		this.ctx.textBaseline = 'middle';
@@ -386,16 +424,16 @@ class HUD {
 		this.ctx.beginPath();
 		this.ctx.moveTo(-length / 2, 0);
 		this.ctx.lineTo(length / 2, 0);
-		this.ctx.lineTo(length / 2, mf * (textTopBorder * (3 / 2) + fontSize));
+		this.ctx.lineTo(length / 2, mf * (textTopBorder * 1.5 + fontSize));
 		this.ctx.lineTo(0, mf * height);
-		this.ctx.lineTo(-length / 2, mf * (textTopBorder * (3 / 2) + fontSize));
+		this.ctx.lineTo(-length / 2, mf * (textTopBorder * 1.5 + fontSize));
 		this.ctx.closePath();
 		this.ctx.stroke();
 
 		var text = Math.round(value);
 		this.ctx.fillText(
 			text,
-			length / 2 - textSideBorder,
+			textWidth / 2,
 			(mf * (2 * textTopBorder + fontSize)) / 2
 		);
 
@@ -406,7 +444,7 @@ class HUD {
 
 		var border = 3;
 
-		var stepHeight = 8;
+		var stepWidth = 8;
 		var stepLength = [16, 11, 7];
 
 		this.ctx.textAlign = 'center';
@@ -414,12 +452,13 @@ class HUD {
 
 		this.ctx.translate(0, mf * (height + textBorder)); // border
 
+		// visible step range clips
 		this.ctx.rect(
-			(-stepRange * stepHeight) / 2,
+			(-stepRange * stepWidth) / 2,
 			0,
-			stepHeight * stepRange,
+			stepWidth * stepRange,
 			mf * 100
-		); // visible step range clip
+		);
 		this.ctx.clip();
 
 		var stepMargin = 5; // left and right extra steps
@@ -427,14 +466,14 @@ class HUD {
 		var stepValueOffset = Math.floor(value); // 35.5 -> 35
 		var stepOffset = value - stepValueOffset; // 35.5 -> 0.5
 
-		this.ctx.translate(-(stepZeroOffset + stepOffset) * stepHeight, 0); // translate to bottom
+		this.ctx.translate(-(stepZeroOffset + stepOffset) * stepWidth, 0); // translate to start position
 
 		for (
 			let i = -stepZeroOffset + stepValueOffset;
 			i < stepZeroOffset + stepValueOffset;
 			i++
 		) {
-			let posI = i * Math.sign(i);
+			let posI = Math.abs(i);
 
 			this.ctx.beginPath();
 			this.ctx.moveTo(0, 0);
@@ -507,7 +546,148 @@ class HUD {
 				);
 			}
 
-			this.ctx.translate(stepHeight, 0);
+			this.ctx.translate(stepWidth, 0);
+		}
+
+		this.ctx.restore();
+	}
+
+	drawRoll(x, y, stepRange = 41, radius = 240, bottom = true) {
+		this.ctx.save();
+		this.ctx.translate(x, y);
+
+		var mf = 1;
+		if (bottom) {
+			mf = -1;
+		}
+
+		// value indicator
+		var value = this.roll * (180 / Math.PI);
+
+		var fontSize = 20;
+		this.setFont(fontSize + 'px');
+
+		var textSideBorder = 5;
+		var textTopBorder = 4;
+		var textWidth = this.ctx.measureText('180').width;
+
+		var length = textSideBorder * 2 + textWidth; // total length
+		var height = textTopBorder * 1.5 + fontSize + length / 4; // total height
+
+		this.ctx.textAlign = 'right';
+		this.ctx.textBaseline = 'middle';
+
+		this.ctx.beginPath();
+		this.ctx.moveTo(-length / 2, 0);
+		this.ctx.lineTo(length / 2, 0);
+		this.ctx.lineTo(length / 2, mf * (textTopBorder * 1.5 + fontSize));
+		this.ctx.lineTo(0, mf * height);
+		this.ctx.lineTo(-length / 2, mf * (textTopBorder * 1.5 + fontSize));
+		this.ctx.closePath();
+		this.ctx.stroke();
+
+		var text = Math.round(value);
+		this.ctx.fillText(
+			text,
+			textWidth / 2,
+			(mf * (2 * textTopBorder + fontSize)) / 2
+		);
+
+		// scale | _.i---|-''I''-|---i._ |
+		fontSize = 16;
+		this.setFont(fontSize + 'px');
+		var textBorder = 4;
+
+		var border = 3;
+
+		var stepWidth = 8;
+		var stepLength = [16, 11, 7];
+
+		this.ctx.textAlign = 'center';
+		this.ctx.textBaseline = 'middle';
+
+		this.ctx.translate(0, mf * (height + textBorder)); // border
+
+		if (this.exactRollRadius) {
+			// exact dynamic radius (half canvas - border - value indicator)
+			radius =
+				this.canvas.height / 2 -
+				(bottom ? this.canvas.height - y : y) -
+				(height + textBorder);
+		}
+
+		if (radius < 0) {
+			this.ctx.restore();
+			return;
+		}
+
+		this.ctx.translate(0, mf * radius); // center of rotation
+
+		// clip
+		var angle = (stepRange * stepWidth) / radius;
+
+		this.ctx.beginPath();
+		this.ctx.moveTo(0, 0);
+		this.ctx.arc(
+			0,
+			0,
+			radius,
+			(bottom ? 0.5 : 1.5) * Math.PI - angle / 2,
+			(bottom ? 0.5 : 1.5) * Math.PI + angle / 2
+		);
+		this.ctx.closePath();
+		this.ctx.clip();
+
+		var stepMargin = 5; // left and right extra steps
+		var stepZeroOffset = Math.ceil(stepRange / 2) + stepMargin; // '0' offset from left (35.5 -> 18, 35 -> 18)
+		var stepValueOffset = Math.floor(value); // 35.5 -> 35
+		var stepOffset = value - stepValueOffset; // 35.5 -> 0.5
+
+		for (
+			let i = -stepZeroOffset + stepValueOffset;
+			i < stepZeroOffset + stepValueOffset;
+			i++
+		) {
+			this.ctx.save();
+			this.ctx.rotate(
+				(mf * -(stepValueOffset - i + stepOffset) * stepWidth) / radius
+			);
+			this.ctx.translate(0, mf * -radius); // bottom of steps
+
+			this.ctx.beginPath();
+			this.ctx.moveTo(0, 0);
+			switch (
+				Math.abs(i) % 10 // steps
+			) {
+				case 0:
+					this.ctx.lineTo(0, mf * stepLength[0]);
+
+					let val = i % 360;
+
+					if (val > 180 || val <= -180) {
+						text = val - Math.sign(i) * 360;
+					} else {
+						text = val;
+					}
+
+					this.ctx.fillText(
+						text,
+						0,
+						mf * (stepLength[0] + (textBorder + fontSize) / 2)
+					);
+					break;
+
+				case 5:
+					this.ctx.lineTo(0, mf * stepLength[1]);
+					break;
+
+				default:
+					this.ctx.lineTo(0, mf * stepLength[2]);
+					break;
+			}
+			this.ctx.stroke();
+
+			this.ctx.restore();
 		}
 
 		this.ctx.restore();
@@ -525,7 +705,7 @@ class HUD {
 
 		var radius = 28;
 		var indexLenght = 6;
-		var range = (3 / 2) * Math.PI;
+		var range = 1.5 * Math.PI;
 		var start = (1 / 2) * Math.PI;
 
 		this.ctx.beginPath();

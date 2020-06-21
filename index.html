@@ -22,6 +22,7 @@
 		<script type="text/javascript">
 			var canvas= document.getElementById('hud');
 			var hud = new HUD(canvas);
+			hud.start();
 
 			test = {
 				variables: {
@@ -57,7 +58,7 @@
 						if (test.variables.pitch >= 90) test.variables.pitch = 0;
 
 						test.variables.roll += 0.05;
-						if (test.variables.roll >= 180) test.variables.roll = 0;
+						if (test.variables.roll >= 360) test.variables.roll = 0;
 
 						test.variables.speed += 0.01;
 						test.variables.altitude += 0.1;

@@ -41,16 +41,18 @@
 				interval: undefined,
 				start: () => {
 					this.interval = setInterval(() => {
-						hud.heading = test.variables.heading * (Math.PI / 180);
-						hud.pitch = test.variables.pitch * (Math.PI / 180);
-						hud.roll = test.variables.roll * (Math.PI / 180);
+						hud.data.heading = test.variables.heading * (Math.PI / 180);
+						hud.data.pitch = test.variables.pitch * (Math.PI / 180);
+						hud.data.roll = test.variables.roll * (Math.PI / 180);
 
-						hud.speed = test.variables.speed;
-						hud.altitude = test.variables.altitude;
-						hud.throtle = test.variables.throtle;
+						hud.data.speed = test.variables.speed;
+						hud.data.altitude = test.variables.altitude;
+						hud.data.throtle = test.variables.throtle;
 
-						hud.flightPitch = test.variables.flightPitch * (Math.PI / 180);
-						hud.flightHeading = test.variables.flightHeading * (Math.PI / 180);
+						hud.data.flight.hitch =
+							test.variables.flightPitch * (Math.PI / 180);
+						hud.data.flight.heading =
+							test.variables.flightHeading * (Math.PI / 180);
 
 						test.variables.heading += 0.05;
 						if (test.variables.heading >= 360) test.variables.heading = 0;
@@ -79,10 +81,25 @@
 				stop: () => {
 					clearInterval(this.interval);
 				},
+				gyro: () => {
+					if (window.DeviceOrientationEvent) {
+						// browser supports DeviceOrientation
+						window.addEventListener(
+							'deviceorientation',
+							(event) => {
+								hud.data.pitch = event.beta * (Math.PI / 180) - 0.5 * Math.PI;
+								hud.data.roll = -event.gamma * (Math.PI / 180);
+								hud.data.heading = event.alpha * (Math.PI / 180);
+							},
+							true
+						);
+					}
+				},
 			};
 		</script>
 
 		<button type="button" onclick="test.start();">Start test</button>
 		<button type="button" onclick="test.stop();">Stop test</button>
+		<button type="button" onclick="test.gyro();">Gyro</button>
 	</body>
 </html>

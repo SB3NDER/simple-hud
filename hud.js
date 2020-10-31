@@ -7,10 +7,6 @@ class HUD {
 
 		this.running = false;
 
-		// default sizes
-		this.canvas.width = 1280;
-		this.canvas.height = 720;
-
 		this.data = {
 			pitch: 0,
 			roll: 0,
@@ -36,8 +32,9 @@ class HUD {
 				this.pixelPerDeg = val * (Math.PI / 180);
 			},
 			uncagedMode: false, // align pitch ladders to flight path
-			exactRollRadius: false,
+			rollRadius: 'none', // 'none' / 'exact' / 'center'
 			timezone: undefined, // default local time, ex. 'America/Los_Angeles' or 'Asia/Tokyo'
+			scale: 1, // resolution scale
 		};
 
 		// set both the degree and radiant variant
@@ -59,7 +56,26 @@ class HUD {
 				color: 'rgba(0, 0, 0, 0.6)',
 				offset: 1.8,
 			},
+			scale: 1, // ui scale
+			stepWidth: 8,
 		};
+
+		// set virtual size(res)
+		this.size = {
+			width: this.canvas.clientWidth / this.style.scale,
+			height: this.canvas.clientHeight / this.style.scale,
+		};
+
+		// set real size(res)
+		this.canvas.width =
+			this.canvas.clientWidth * window.devicePixelRatio * this.settings.scale;
+		this.canvas.height =
+			this.canvas.clientHeight * window.devicePixelRatio * this.settings.scale;
+
+		// scale
+		var scale =
+			window.devicePixelRatio * this.style.scale * this.settings.scale;
+		this.ctx.setTransform(scale, 0, 0, scale, 0, 0);
 	}
 
 	start() {
@@ -74,32 +90,56 @@ class HUD {
 	}
 
 	draw = () => {
+		var scale =
+			window.devicePixelRatio * this.style.scale * this.settings.scale;
+
 		if (
-			this.canvas.width == this.canvas.clientWidth &&
-			this.canvas.height == this.canvas.clientHeight
+			// size
+			this.size.width * this.style.scale == this.canvas.clientWidth &&
+			this.size.height * this.style.scale == this.canvas.clientHeight &&
+			// scale
+			Math.floor(
+				this.canvas.clientHeight * window.devicePixelRatio * this.settings.scale
+			) == this.canvas.height
 		) {
-			// no size changes
+			// no size and scale changes
 
 			// clear canvas
-			this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height); // faster?
+			this.ctx.clearRect(0, 0, this.size.width, this.size.height); // faster?
 		} else {
-			// clear and resize the canvas
-			this.canvas.width = this.canvas.clientWidth;
-			this.canvas.height = this.canvas.clientHeight;
+			// size changed
+
+			// set virtual size(res)
+			this.size = {
+				width: this.canvas.clientWidth / this.style.scale,
+				height: this.canvas.clientHeight / this.style.scale,
+			};
+
+			// clear and set real size(res)
+			this.canvas.width =
+				this.canvas.clientWidth * window.devicePixelRatio * this.settings.scale;
+			this.canvas.height =
+				this.canvas.clientHeight *
+				window.devicePixelRatio *
+				this.settings.scale;
+
+			// scale
+			this.ctx.setTransform(scale, 0, 0, scale, 0, 0);
 		}
 
 		if (!this.running) {
 			return;
 		}
 
-		//set the attributes
+		// set the attributes
 		this.ctx.lineWidth = this.style.lineWidth;
 		this.ctx.strokeStyle = this.style.color;
 		this.ctx.fillStyle = this.style.color;
 
 		// dynamic ui
 
-		this.ctx.translate(this.canvas.width / 2, this.canvas.height / 2); // center coordinate
+		// center coordinate
+		this.ctx.translate(this.size.width / 2, this.size.height / 2);
 
 		// flight path
 		this.drawWithShadow(() => {
@@ -140,7 +180,8 @@ class HUD {
 				this.drawPitchLadder(0, -(deg * this.settings.pixelPerDeg), deg);
 			}
 		});
-		this.ctx.setTransform(1, 0, 0, 1, 0, 0); // reset trasformation
+
+		this.ctx.setTransform(scale, 0, 0, scale, 0, 0); // reset trasformation
 
 		// fixed ui
 
@@ -150,7 +191,7 @@ class HUD {
 		this.drawWithShadow(() => {
 			this.drawVerticalScale(
 				border,
-				this.canvas.height / 2,
+				this.size.height / 2,
 				this.data.speed,
 				'9999',
 				41,
@@ -161,8 +202,8 @@ class HUD {
 		// altitude
 		this.drawWithShadow(() => {
 			this.drawVerticalScale(
-				this.canvas.width - border,
-				this.canvas.height / 2,
+				this.size.width - border,
+				this.size.height / 2,
 				this.data.altitude,
 				'99999',
 				41,
@@ -172,14 +213,14 @@ class HUD {
 
 		// heading
 		this.drawWithShadow(() => {
-			this.drawHeading(this.canvas.width / 2, border, 61, false);
+			this.drawHeading(this.size.width / 2, border, 61, false);
 		});
 
 		// roll
 		this.drawWithShadow(() => {
 			this.drawRoll(
-				this.canvas.width / 2,
-				this.canvas.height - border,
+				this.size.width / 2,
+				this.size.height - border,
 				51,
 				260,
 				true
@@ -192,10 +233,10 @@ class HUD {
 			var yDif = 20 * this.style.font.scale + 4;
 
 			// throtle
-			this.drawThrotle(border, this.canvas.height / 2 - yDif);
+			this.drawThrotle(border, this.size.height / 2 - yDif);
 
 			// time
-			this.drawTime(border, this.canvas.height / 2 + yDif);
+			this.drawTime(border, this.size.height / 2 + yDif);
 		});
 
 		requestAnimationFrame(this.draw);
@@ -407,7 +448,6 @@ class HUD {
 
 		var border = 4;
 
-		var stepWidth = 8;
 		var stepLength = [16, 11, 7];
 
 		if (!right) this.ctx.textAlign = 'left';
@@ -418,10 +458,10 @@ class HUD {
 		// visible step range clip
 		this.ctx.rect(
 			0,
-			-((stepRange * stepWidth) / 2),
+			-((stepRange * this.style.stepWidth) / 2),
 			// prettier-ignore
 			mf * (stepLength[0] + 2 * textBorder + this.ctx.measureText(exampleValue + '9').width), // (step + 2*textBorder + textWidth)
-			stepRange * stepWidth
+			stepRange * this.style.stepWidth
 		);
 		this.ctx.clip();
 
@@ -430,7 +470,7 @@ class HUD {
 		var stepValueOffset = Math.floor(value); // 35.5 -> 35
 		var stepOffset = value - stepValueOffset; // 35.5 -> 0.5
 
-		this.ctx.translate(0, (stepZeroOffset + stepOffset) * stepWidth); // translate to start position
+		this.ctx.translate(0, (stepZeroOffset + stepOffset) * this.style.stepWidth); // translate to start position
 
 		this.ctx.beginPath();
 		for (
@@ -457,7 +497,7 @@ class HUD {
 					break;
 			}
 
-			this.ctx.translate(0, -stepWidth);
+			this.ctx.translate(0, -this.style.stepWidth);
 		}
 		this.ctx.stroke();
 
@@ -512,7 +552,6 @@ class HUD {
 
 		var border = 4;
 
-		var stepWidth = 8;
 		var stepLength = [16, 11, 7];
 
 		this.ctx.textAlign = 'center';
@@ -522,9 +561,9 @@ class HUD {
 
 		// visible step range clips
 		this.ctx.rect(
-			(-stepRange * stepWidth) / 2,
+			(-stepRange * this.style.stepWidth) / 2,
 			0,
-			stepWidth * stepRange,
+			this.style.stepWidth * stepRange,
 			mf * (stepLength[0] + 2 * textBorder + fontSize)
 		);
 		this.ctx.clip();
@@ -534,7 +573,10 @@ class HUD {
 		var stepValueOffset = Math.floor(value); // 35.5 -> 35
 		var stepOffset = value - stepValueOffset; // 35.5 -> 0.5
 
-		this.ctx.translate(-(stepZeroOffset + stepOffset) * stepWidth, 0); // translate to start position
+		this.ctx.translate(
+			-(stepZeroOffset + stepOffset) * this.style.stepWidth,
+			0
+		); // translate to start position
 
 		this.ctx.beginPath();
 		for (
@@ -613,7 +655,7 @@ class HUD {
 				);
 			}
 
-			this.ctx.translate(stepWidth, 0);
+			this.ctx.translate(this.style.stepWidth, 0);
 		}
 		this.ctx.stroke();
 
@@ -668,7 +710,6 @@ class HUD {
 
 		var border = 4;
 
-		var stepWidth = 8;
 		var stepLength = [16, 11, 7];
 
 		this.ctx.textAlign = 'center';
@@ -676,12 +717,22 @@ class HUD {
 		// space from value indicator
 		this.ctx.translate(0, mf * (height + border));
 
-		if (this.settings.exactRollRadius) {
-			// exact dynamic radius (half canvas - border - value indicator)
-			radius =
-				this.canvas.height / 2 -
-				(bottom ? this.canvas.height - y : y) -
-				(height + border);
+		switch (this.settings.rollRadius) {
+			case 'exact':
+				radius = (this.style.stepWidth * 180) / Math.PI;
+				break;
+
+			case 'center':
+				// center radius (half canvas - border - value indicator)
+				radius =
+					this.size.height / 2 -
+					(bottom ? this.size.height - y : y) -
+					(height + border);
+				break;
+
+			case 'none':
+			default:
+				break;
 		}
 
 		if (radius < 0) {
@@ -692,7 +743,7 @@ class HUD {
 		this.ctx.translate(0, mf * radius); // center of rotation
 
 		// clip
-		var angle = (stepRange * stepWidth) / radius;
+		var angle = (stepRange * this.style.stepWidth) / radius;
 
 		this.ctx.beginPath();
 		this.ctx.moveTo(0, 0);
@@ -718,7 +769,8 @@ class HUD {
 			i++
 		) {
 			this.ctx.rotate(
-				(mf * -(stepValueOffset - i + stepOffset) * stepWidth) / radius
+				(mf * -(stepValueOffset - i + stepOffset) * this.style.stepWidth) /
+					radius
 			);
 			this.ctx.translate(0, mf * -radius); // bottom of steps
 
@@ -755,7 +807,8 @@ class HUD {
 
 			this.ctx.translate(0, mf * radius); // center of rotation
 			this.ctx.rotate(
-				(mf * (stepValueOffset - i + stepOffset) * stepWidth) / radius
+				(mf * (stepValueOffset - i + stepOffset) * this.style.stepWidth) /
+					radius
 			);
 		}
 		this.ctx.stroke();

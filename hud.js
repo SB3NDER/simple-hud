@@ -21,15 +21,15 @@ class HUD {
 		};
 
 		this.settings = {
-			pixelPerDeg: null, // pixel per degree
-			pixelPerRad: null, // pixels per radiant
-			set setPixelPerDeg(val) {
-				this.pixelPerDeg = val;
-				this.pixelPerRad = val * (180 / Math.PI);
+			_pixelPerDeg: null, // pixel per degree
+			_pixelPerRad: null, // pixels per radiant
+			set pixelPerDeg(val) {
+				this._pixelPerDeg = val;
+				this._pixelPerRad = val * (180 / Math.PI);
 			},
-			set setPixelPerRad(val) {
-				this.pixelPerRad = val;
-				this.pixelPerDeg = val * (Math.PI / 180);
+			set pixelPerRad(val) {
+				this._pixelPerRad = val;
+				this._pixelPerDeg = val * (Math.PI / 180);
 			},
 			uncagedMode: false, // align pitch ladders to flight path
 			rollRadius: 'none', // 'none' / 'exact' / 'center'
@@ -38,7 +38,7 @@ class HUD {
 		};
 
 		// set both the degree and radiant variant
-		this.settings.setPixelPerDeg = 12;
+		this.settings.pixelPerDeg = 12;
 
 		this.style = {
 			lineWidth: 2,
@@ -144,8 +144,8 @@ class HUD {
 		// flight path
 		this.drawWithShadow(() => {
 			this.drawFlightPath(
-				this.data.flight.heading * this.settings.pixelPerRad,
-				-(this.data.flight.pitch * this.settings.pixelPerRad)
+				this.data.flight.heading * this.settings._pixelPerRad,
+				-(this.data.flight.pitch * this.settings._pixelPerRad)
 			);
 		});
 
@@ -154,7 +154,7 @@ class HUD {
 		if (this.settings.uncagedMode) {
 			// align pitch ladders to flight path
 			this.ctx.translate(
-				this.settings.pixelPerRad *
+				this.settings._pixelPerRad *
 					(this.data.flight.heading -
 						this.data.flight.pitch * Math.tan(this.data.roll)),
 				0
@@ -164,7 +164,7 @@ class HUD {
 		// ladders
 		this.drawWithShadow(() => {
 			this.ctx.rotate(this.data.roll); // ladders roll transformation
-			this.ctx.translate(0, this.data.pitch * this.settings.pixelPerRad); // ladders pitch transformation
+			this.ctx.translate(0, this.data.pitch * this.settings._pixelPerRad); // ladders pitch transformation
 
 			this.drawHorizonLadder(0, 0); // artificial horizon ladder
 
@@ -172,12 +172,12 @@ class HUD {
 
 			// top ladders
 			for (let deg = pitchDegStep; deg <= 90; deg += pitchDegStep) {
-				this.drawPitchLadder(0, -(deg * this.settings.pixelPerDeg), deg);
+				this.drawPitchLadder(0, -(deg * this.settings._pixelPerDeg), deg);
 			}
 
 			// bottom ladders
 			for (let deg = -pitchDegStep; deg >= -90; deg -= pitchDegStep) {
-				this.drawPitchLadder(0, -(deg * this.settings.pixelPerDeg), deg);
+				this.drawPitchLadder(0, -(deg * this.settings._pixelPerDeg), deg);
 			}
 		});
 
@@ -341,7 +341,7 @@ class HUD {
 
 		this.ctx.beginPath();
 		for (let i = 0; i < 3; i++) {
-			this.ctx.translate(0, this.settings.pixelPerDeg);
+			this.ctx.translate(0, this.settings._pixelPerDeg);
 
 			// right
 			this.ctx.moveTo(space / 2, 0);
@@ -354,7 +354,7 @@ class HUD {
 		this.ctx.stroke();
 
 		this.ctx.setLineDash([]);
-		this.ctx.translate(-x, -y - 3 * this.settings.pixelPerDeg);
+		this.ctx.translate(-x, -y - 3 * this.settings._pixelPerDeg);
 	}
 
 	drawPitchLadder(x, y, value) {

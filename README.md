@@ -13,11 +13,11 @@ var hud = new HUD(canvas);
 hud.start();
 ```
 
-###Data feed
+### Data feed
 
 - Units
-  Angles: 'radians',
-  Lenght: 'unitless'
+  Angles: radians,
+  Lenght: unitless
 
 ```javascript
 Object.assign(hud.data, {
@@ -34,7 +34,7 @@ Object.assign(hud.data, {
 });
 ```
 
-###Settings
+### Settings
 
 ```javascript
 Object.assign(hud.settings, {
@@ -46,7 +46,7 @@ Object.assign(hud.settings, {
 });
 ```
 
-###Style
+### Style
 
 ```javascript
 Object.assign(hud.style, {
